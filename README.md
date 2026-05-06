@@ -57,11 +57,6 @@ lichess-backup-2026-05-06--14-32/
 
 Each run is a fresh snapshot — deleted studies are not included.
 
-## Incremental game backup
-
-After the first run, game state is saved to `~/.lichess-backup-state`. Subsequent
-runs only download new games, making daily backups fast.
-
 ## Exit codes
 
 | Code | Meaning |

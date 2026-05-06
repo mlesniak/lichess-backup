@@ -8,7 +8,6 @@ DOWNLOAD_PUZZLES=false
 KEEP=0
 COMPRESS=true
 ERRORS=0
-STATE_FILE="${HOME}/.lichess-backup-state"
 
 usage() {
     echo "Usage: $0 [--puzzles] [--keep N] [--no-compress]" >&2
@@ -86,18 +85,8 @@ http_with_retry() {
     done
 }
 
-# --- Games (incremental) ---
+# --- Games ---
 echo "Backing up games..."
-SINCE_PARAM=""
-LAST_TS=""
-if [[ -f "${STATE_FILE}" ]]; then
-    LAST_TS=$(grep "^last_game_ts=" "${STATE_FILE}" 2>/dev/null | cut -d= -f2 || true)
-    if [[ -n "${LAST_TS}" ]]; then
-        SINCE_PARAM="since==${LAST_TS}"
-        echo "  Incremental: fetching games since $(date -d @$((LAST_TS / 1000)) '+%Y-%m-%d %H:%M' 2>/dev/null || echo "${LAST_TS}ms")"
-    fi
-fi
-
 if http --stream GET "${API}/api/games/user/${USERNAME}" \
     "${AUTH}" \
     Accept:application/x-chess-pgn \
@@ -106,16 +95,9 @@ if http --stream GET "${API}/api/games/user/${USERNAME}" \
     clocks==true \
     evals==true \
     opening==true \
-    ${SINCE_PARAM} \
     > "${DIR}/games.pgn"; then
     GAME_COUNT=$(grep -c '^\[Event ' "${DIR}/games.pgn" 2>/dev/null || echo 0)
     echo "  ${GAME_COUNT} games → games.pgn ($(du -h "${DIR}/games.pgn" | cut -f1))"
-    # Save timestamp for next incremental run (now in ms)
-    NEW_TS=$(date +%s%3N)
-    if [[ -f "${STATE_FILE}" ]]; then
-        sed -i '/^last_game_ts=/d' "${STATE_FILE}"
-    fi
-    echo "last_game_ts=${NEW_TS}" >> "${STATE_FILE}"
 else
     echo "  ERROR: games download failed" >&2
     ERRORS=$((ERRORS + 1))
