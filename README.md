@@ -23,23 +23,48 @@ export LICHESS_TOKEN=your_token_here
 ## Usage
 
 ```bash
+bash backup.sh [--puzzles] [--keep N] [--no-compress]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--puzzles` | Include puzzle activity history |
+| `--keep N` | Delete old backups, keep only N most recent |
+| `--no-compress` | Skip `.tar.gz` compression, keep raw directory |
+
+```bash
 # Games + studies
 bash backup.sh
 
-# Games + studies + puzzle history
-bash backup.sh --puzzles
+# Everything, keep last 5 backups
+bash backup.sh --puzzles --keep 5
+
+# No compression (for scripting/piping)
+bash backup.sh --no-compress
 ```
 
 ## Output
 
-Creates `lichess-backup-YYYY-MM-DD--HH-MM/` with:
+Creates `lichess-backup-YYYY-MM-DD--HH-MM.tar.gz` (or directory with `--no-compress`):
 
 ```
 lichess-backup-2026-05-06--14-32/
-  games.pgn           # all games (PGN, with clocks/evals/openings)
+  games.pgn              # all games (PGN, with clocks/evals/openings)
   studies/
-    Study_Name-<id>.pgn   # one file per study
-  puzzles.ndjson      # puzzle activity history (if --puzzles)
+    Study_Name-<id>.pgn  # one file per study, importable separately
+  puzzles.ndjson         # puzzle activity history (if --puzzles)
 ```
 
 Each run is a fresh snapshot — deleted studies are not included.
+
+## Incremental game backup
+
+After the first run, game state is saved to `~/.lichess-backup-state`. Subsequent
+runs only download new games, making daily backups fast.
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `2` | Partial failure (some downloads failed) |
